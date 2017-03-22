@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>登录</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="keywords" content="" />
+<script src="/static/js/jquery.js" type="text/javascript" charset="utf-8" async defer></script>
+<link href="/static/css/login.css" rel='stylesheet' type='text/css' />
+<!--webfonts-->
+</head>
+<body>
+<script>$(document).ready(function(c) {
+	$('.close').on('click', function(c){
+		$('.login-form').fadeOut('slow', function(c){
+	  		$('.login-form').remove();
+		});
+	});
+});
+</script>
+ <!--SIGN UP-->
+ <h1>中投天诚后台管理系统</h1>
+<div class="login-form">
+	<div class="close"> </div>
+		<div class="head-info">
+			<label class="lbl-1"> </label>
+			<label class="lbl-2"> </label>
+			<label class="lbl-3"> </label>
+		</div>
+		<div class="clear"> </div>
+		<form method="POST" action="/login">
+				<input type="text" class="text" value="Username" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Username';}" name="email">
+				<div class="key">
+					<input type="password" value="Password" onfocus="this.value = '';" onblur="if (this.value == '') {this.value = 'Password';}" name="password">
+				</div>
+				<div class="signin">
+					<button type="submit" value="Login" >登录</button>
+				</div>
+		</form>
+</div> 
+</body>
+</html>
