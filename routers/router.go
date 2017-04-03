@@ -2,6 +2,7 @@ package routers
 
 import (
 	"github.com/astaxie/beego"
+	"github.com/jinzhu/gorm"
 	"github.com/qor/admin"
 	"github.com/qor/i18n"
 	"github.com/qor/i18n/backends/database"
@@ -62,11 +63,10 @@ func init() {
 	DB.AutoMigrate(&models.User{}, &models.Client{}, &models.ClientInfo{}, &models.AssetInfo{}, &models.FullHouse{})
 	Admin := admin.New(&qor.Config{DB: DB})
 	Admin.GetRouter().Get("/", func(c *admin.Context) {
-		http.Redirect(c.Writer, c.Request, "/admin/clients", http.StatusSeeOther)
-		Role = c.Roles[0]
-		if Role == "超级管理员" {
-			beego.Error("jsioajdfojafo\n")
-		}
+		http.Redirect(c.Writer, c.Request, "/admin/clients?scopes=我的客户", http.StatusSeeOther)
+	})
+	Admin.GetRouter().Get("/admin/clents?", func(c *admin.Context) {
+		http.Redirect(c.Writer, c.Request, "/admin/clients?scopes=我的客户", http.StatusSeeOther)
 	})
 
 	/**************添加菜单***************/
@@ -99,10 +99,25 @@ func init() {
 	adminuser.IndexAttrs("-Password")
 
 	//客户数据
-	client := Admin.AddResource(&models.Client{}, &admin.Config{Menu: []string{"Site Management"}})
+	client := Admin.AddResource(&models.Client{}, &admin.Config{
+		Menu: []string{"Site Management"},
+	})
+	client.Scope(&admin.Scope{Name: "我的客户", Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
+		roles := context.Roles[0]
+		if roles == "超级管理员" {
+			var clients []*models.Client
+			return db.Find(&clients)
+		} else {
+			return db.Where("operator = ?", context.CurrentUser.DisplayName())
+		}
+	},
+		Default: true,
+	})
 	clientinfo := client.Meta(&admin.Meta{Name: "ClientInfo"}).Resource
-
-	clientinfo.Meta(&admin.Meta{Name: "Gender", Config: &admin.SelectOneConfig{Collection: []string{"男", "女", "未知"}}})
+	clientinfo.Meta(&admin.Meta{
+		Name:   "Gender",
+		Config: &admin.SelectOneConfig{Collection: []string{"男", "女", "未知"}},
+	})
 	client.NewAttrs(
 		&admin.Section{
 			Title: "Basic InFo",
@@ -110,7 +125,7 @@ func init() {
 				{"Operator"},
 				{"Name", "Count", "Level"},
 				{"State", "Result", "Other"},
-				//{"ClientInfo"},,
+				{"ClientInfo"},
 			},
 		},
 	)

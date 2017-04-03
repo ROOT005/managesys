@@ -145,3 +145,6 @@ func GetInfo() string {
 	fmt.Println(time.Now().Weekday())
 	return time.Now().String()
 }
+func GetClienT() {
+
+}
