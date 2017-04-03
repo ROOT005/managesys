@@ -1,28 +1,28 @@
 package models
 
 import (
+	"fmt"
 	"github.com/jinzhu/gorm"
 	"time"
 )
 
 type Client struct {
 	gorm.Model
-	Operator     string
-	Name         string
-	Count        string
-	Level        string
-	State        string
-	Result       string
-	Other        string
-	ClientInfo   ClientInfo
-	ClientInfoID uint
-	AssetInfo    AssetInfo
-	AssetInfoID  uint
+	Operator   string
+	Name       string
+	Count      string
+	Level      string
+	State      string
+	Result     string
+	Other      string
+	ClientInfo ClientInfo
+	AssetInfo  AssetInfo
 }
 
 //客户信息
 type ClientInfo struct {
 	gorm.Model
+	ClientID      uint
 	Gender        string
 	Age           uint
 	PhoneNum      string
@@ -44,7 +44,8 @@ type ClientInfo struct {
 
 //资产信息
 type AssetInfo struct {
-	ID              uint
+	gorm.Model
+	ClientID        uint
 	FullHouse       []FullHouse
 	MortgageHouse   []MortgageHouse
 	FullCar         []FullCar
@@ -58,7 +59,7 @@ type AssetInfo struct {
 
 //全款房
 type FullHouse struct {
-	ID           uint
+	AssetInfoID  uint
 	Value        string
 	Area         string
 	Paytime      string
@@ -68,17 +69,17 @@ type FullHouse struct {
 
 //按揭房
 type MortgageHouse struct {
-	ID        uint
-	FirstPay  string
-	MouthPay  string
-	LimitTime string
-	Location  string
-	BankName  string
+	AssetInfoID uint
+	FirstPay    string
+	MouthPay    string
+	LimitTime   string
+	Location    string
+	BankName    string
 }
 
 //全款车
 type FullCar struct {
-	ID          uint
+	AssetInfoID uint
 	Value       string
 	PayDay      string
 	Certificate string
@@ -88,54 +89,59 @@ type FullCar struct {
 
 //按揭车
 type MortgageCar struct {
-	ID        uint
-	FirstPay  string
-	PayMethod string
-	LimitTime string
-	MouthPay  string
-	PayCount  string
+	AssetInfoID uint
+	FirstPay    string
+	PayMethod   string
+	LimitTime   string
+	MouthPay    string
+	PayCount    string
 }
 
 //保单
 type InsurancePolicy struct {
-	ID       uint
-	Type     string
-	PayTime  string
-	PayCount string
-	PayWay   string
+	AssetInfoID uint
+	Type        string
+	PayTime     string
+	PayCount    string
+	PayWay      string
 }
 
 //公积金
 type AccuFound struct {
-	ID         uint
-	PayAccount string
-	PayRate    string
-	PayTime    string
-	PayWay     string
+	AssetInfoID uint
+	PayAccount  string
+	PayRate     string
+	PayTime     string
+	PayWay      string
 }
 
 //社保
 type SocialSecurity struct {
-	ID         uint
-	PayAccount string
-	PayRate    string
-	PayTime    string
-	PayWay     string
+	AssetInfoID uint
+	PayAccount  string
+	PayRate     string
+	PayTime     string
+	PayWay      string
 }
 
 //工资
 type Salary struct {
-	ID      uint
-	GetWay  string
-	Account string
+	AssetInfoID uint
+	GetWay      string
+	Account     string
 }
 
 //生意贷
 type BusinessLoan struct {
-	ID           uint
+	AssetInfoID  uint
 	Licence      bool
 	RegistTime   time.Time
 	Occupancy    string
 	FamKnow      bool
 	DetailedList string
+}
+
+func GetInfo() string {
+	fmt.Println(time.Now().Weekday())
+	return time.Now().String()
 }

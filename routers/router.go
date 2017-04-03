@@ -7,9 +7,10 @@ import (
 	"github.com/qor/i18n/backends/database"
 	"github.com/qor/qor"
 	"github.com/qor/qor/resource"
+	"github.com/qor/roles"
 	"github.com/qor/validations"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/authboss.v0"
+	//"gopkg.in/authboss.v0"
 	_ "gopkg.in/authboss.v0/auth"
 	_ "gopkg.in/authboss.v0/confirm"
 	_ "gopkg.in/authboss.v0/recover"
@@ -20,25 +21,23 @@ import (
 	"net/http"
 )
 
-type AdminAuth struct{}
+var Role string
 
-var (
-	Auth = authboss.New()
-)
+type Auth struct{}
 
-func (AdminAuth) LoginURL(c *admin.Context) string {
+func (Auth) LoginURL(c *admin.Context) string {
 	return "/login"
 }
-func (AdminAuth) LogoutURL(c *admin.Context) string {
+func (Auth) LogoutURL(c *admin.Context) string {
 	return "/logout"
 }
 
-func (AdminAuth) GetCurrentUser(c *admin.Context) qor.CurrentUser {
+func (Auth) GetCurrentUser(c *admin.Context) qor.CurrentUser {
 	email, _ := c.Request.Cookie("id")
 	value, err := c.Request.Cookie("see")
 	if err == nil && value.Value == "BgQDwQ3THJn9F7NPLBi6hTI3Fwz55h47jQUVCOL6iq" {
 		var user models.User
-		if !db.DB.First(&user, "email = ?", email).RecordNotFound() {
+		if !db.DB.First(&user, "email = ?", email.Value).RecordNotFound() {
 			return &user
 		}
 	}
@@ -46,21 +45,39 @@ func (AdminAuth) GetCurrentUser(c *admin.Context) qor.CurrentUser {
 }
 
 func init() {
+	/********************权限设置****************/
+	roles.Register("超级管理员", func(req *http.Request, currentUser interface{}) bool {
+		return req.RemoteAddr == "127.0.0.1" || (currentUser.(*models.User) != nil && currentUser.(*models.User).Role == "超级管理员")
+	})
+	roles.Register("店长", func(req *http.Request, currentUser interface{}) bool {
+		return currentUser.(*models.User) != nil && currentUser.(*models.User).Role == "店长"
+	})
+	roles.Register("店员", func(req *http.Request, currentUser interface{}) bool {
+		return currentUser.(*models.User) != nil && currentUser.(*models.User).Role == "店员"
+	})
+
 	//链接数据库
 	DB := db.DB
-	//本地化数据
 	I18n := i18n.New(database.New(DB))
-	//注册资源
-	DB.AutoMigrate(&models.User{}, &models.Client{})
+	DB.AutoMigrate(&models.User{}, &models.Client{}, &models.ClientInfo{}, &models.AssetInfo{}, &models.FullHouse{})
 	Admin := admin.New(&qor.Config{DB: DB})
+	Admin.GetRouter().Get("/", func(c *admin.Context) {
+		http.Redirect(c.Writer, c.Request, "/admin/clients", http.StatusSeeOther)
+		Role = c.Roles[0]
+		if Role == "超级管理员" {
+			beego.Error("jsioajdfojafo\n")
+		}
+	})
 
 	/**************添加菜单***************/
-	//控制面板
-	Admin.AddMenu(&admin.Menu{Name: "Dashboard", Link: "/admin"})
 	//管理员管理
-	admin_auth := AdminAuth{}
-	Admin.SetAuth(&admin_auth)
-	adminuser := Admin.AddResource(&models.User{}, &admin.Config{Menu: []string{"User"}})
+	Admin.SetAuth(Auth{})
+	Admin.SetSiteName("51DK管理系统")
+	adminuser := Admin.AddResource(&models.User{}, &admin.Config{
+		Menu:       []string{"User"},
+		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.Create, "店长").Allow(roles.CRUD, "店员"),
+	})
+	adminuser.Meta(&admin.Meta{Name: "Role", Config: &admin.SelectOneConfig{Collection: []string{"超级管理员", "店长", "店员"}}})
 	adminuser.Meta(&admin.Meta{Name: "Password",
 		Type:            "password",
 		FormattedValuer: func(interface{}, *qor.Context) interface{} { return "" },
@@ -78,14 +95,31 @@ func init() {
 				}
 			}
 		},
-	})
+	}).SetPermission(roles.Allow(roles.CRUD, "超级管理员"))
 	adminuser.IndexAttrs("-Password")
 
 	//客户数据
 	client := Admin.AddResource(&models.Client{}, &admin.Config{Menu: []string{"Site Management"}})
-	client.Meta(&admin.Meta{Name: "ClientInfo", Type: "single_edit"})
-	client.Meta(&admin.Meta{Name: "AssetInfo", Type: "single_edit"})
+	clientinfo := client.Meta(&admin.Meta{Name: "ClientInfo"}).Resource
+
+	clientinfo.Meta(&admin.Meta{Name: "Gender", Config: &admin.SelectOneConfig{Collection: []string{"男", "女", "未知"}}})
+	client.NewAttrs(
+		&admin.Section{
+			Title: "Basic InFo",
+			Rows: [][]string{
+				{"Operator"},
+				{"Name", "Count", "Level"},
+				{"State", "Result", "Other"},
+				//{"ClientInfo"},,
+			},
+		},
+	)
+	client.EditAttrs(client.NewAttrs())
 	client.IndexAttrs("ID", "Name", "Count", "Level", "State", "Result")
+	client.Action(&admin.Action{
+		Name:  "查看详情",
+		Modes: []string{"menu_item"},
+	})
 	//添加翻译
 	Admin.AddResource(I18n)
 
@@ -96,4 +130,5 @@ func init() {
 	beego.Router("/login", &controllers.LoginController{})
 	beego.Router("/logout", &controllers.LogoutController{})
 	beego.Router("/", &controllers.MainController{})
+	beego.Router("/info", &controllers.MainController{}, "get:GetInfo")
 }

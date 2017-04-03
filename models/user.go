@@ -14,6 +14,6 @@ type User struct {
 	Role     string
 }
 
-func (user *User) DisplayName() string {
-	return user.Name
+func (u *User) DisplayName() string {
+	return u.Name
 }
