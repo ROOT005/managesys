@@ -60,12 +60,9 @@ func init() {
 	//链接数据库
 	DB := db.DB
 	I18n := i18n.New(database.New(DB))
-	DB.AutoMigrate(&models.User{}, &models.Client{}, &models.ClientInfo{}, &models.AssetInfo{}, &models.FullHouse{})
+	DB.AutoMigrate(&models.User{}, &models.Client{}, &models.AssetInfo{}, &models.FullHouse{}, &models.MortgageHouse{}, &models.FullCar{}, &models.MortgageCar{}, &models.InsurancePolicy{}, &models.AccuFound{}, &models.SocialSecurity{}, &models.Salary{}, &models.BusinessLoan{})
 	Admin := admin.New(&qor.Config{DB: DB})
 	Admin.GetRouter().Get("/", func(c *admin.Context) {
-		http.Redirect(c.Writer, c.Request, "/admin/clients?scopes=我的客户", http.StatusSeeOther)
-	})
-	Admin.GetRouter().Get("/admin/clents?", func(c *admin.Context) {
 		http.Redirect(c.Writer, c.Request, "/admin/clients?scopes=我的客户", http.StatusSeeOther)
 	})
 
@@ -75,7 +72,7 @@ func init() {
 	Admin.SetSiteName("51DK管理系统")
 	adminuser := Admin.AddResource(&models.User{}, &admin.Config{
 		Menu:       []string{"User"},
-		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.Create, "店长").Allow(roles.CRUD, "店员"),
+		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.CRUD, "店长").Deny(roles.CRUD, "店员"),
 	})
 	adminuser.Meta(&admin.Meta{Name: "Role", Config: &admin.SelectOneConfig{Collection: []string{"超级管理员", "店长", "店员"}}})
 	adminuser.Meta(&admin.Meta{Name: "Password",
@@ -95,16 +92,25 @@ func init() {
 				}
 			}
 		},
-	}).SetPermission(roles.Allow(roles.CRUD, "超级管理员"))
+	})
 	adminuser.IndexAttrs("-Password")
 
 	//客户数据
 	client := Admin.AddResource(&models.Client{}, &admin.Config{
 		Menu: []string{"Site Management"},
 	})
+	client.Meta(&admin.Meta{
+		Name:       "Level",
+		Config:     &admin.SelectOneConfig{Collection: []string{"优秀", "良好", "中等", "较差"}},
+		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.CRUD, "店长").Allow(roles.Read, "店员"),
+	})
+	client.Meta(&admin.Meta{
+		Name:       "Result",
+		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.CRUD, "店长").Allow(roles.Read, "店员"),
+	})
 	client.Scope(&admin.Scope{Name: "我的客户", Handle: func(db *gorm.DB, context *qor.Context) *gorm.DB {
 		roles := context.Roles[0]
-		if roles == "超级管理员" {
+		if roles == "超级管理员" || roles == "店长" {
 			var clients []*models.Client
 			return db.Find(&clients)
 		} else {
@@ -113,8 +119,8 @@ func init() {
 	},
 		Default: true,
 	})
-	clientinfo := client.Meta(&admin.Meta{Name: "ClientInfo"}).Resource
-	clientinfo.Meta(&admin.Meta{
+	//clientinfo := client.Meta(&admin.Meta{Name: "ClientInfo"}).Resource
+	client.Meta(&admin.Meta{
 		Name:   "Gender",
 		Config: &admin.SelectOneConfig{Collection: []string{"男", "女", "未知"}},
 	})
@@ -125,15 +131,36 @@ func init() {
 				{"Operator"},
 				{"Name", "Count", "Level"},
 				{"State", "Result", "Other"},
-				{"ClientInfo"},
+				{"Gender", "Age", "PhoneNum"},
+				{"Address", "MaritalStatuc", "Company"},
+				{"CreditCheck", "CreCheckCount", "GetTime"},
+				{"Balance", "CredCard", "PayAc"},
+				{"MaxAc", "IdNum", "DetailedList"},
+				{"CurrentAdd", "CompanyAdd"},
+			},
+		},
+		&admin.Section{
+			Title: "AssetInfo",
+			Rows: [][]string{
+				{"AssetInfo"},
 			},
 		},
 	)
 	client.EditAttrs(client.NewAttrs())
+	client.ShowAttrs(client.NewAttrs())
+
 	client.IndexAttrs("ID", "Name", "Count", "Level", "State", "Result")
+
 	client.Action(&admin.Action{
-		Name:  "查看详情",
-		Modes: []string{"menu_item"},
+		Name: "批量删除",
+		Handle: func(actionArgument *admin.ActionArgument) error {
+			var client []*models.Client
+			for _, record := range actionArgument.FindSelectedRecords() {
+				actionArgument.Context.DB.Model(record.(*models.Client)).Delete(&client)
+			}
+			return nil
+		},
+		Modes: []string{"index"},
 	})
 	//添加翻译
 	Admin.AddResource(I18n)

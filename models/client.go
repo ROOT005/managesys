@@ -1,28 +1,21 @@
 package models
 
 import (
-	"fmt"
 	"github.com/jinzhu/gorm"
+	"managesys/db"
 	"time"
 )
 
 type Client struct {
 	gorm.Model
-	Operator   string
-	Name       string
-	Count      string
-	Level      string
-	State      string
-	Result     string
-	Other      string
-	ClientInfo ClientInfo
-	AssetInfo  AssetInfo
-}
-
-//客户信息
-type ClientInfo struct {
-	gorm.Model
-	ClientID      uint
+	Operator string
+	Name     string
+	Count    string
+	Level    string
+	State    string
+	Result   string
+	Other    string
+	//clieninfo
 	Gender        string
 	Age           uint
 	PhoneNum      string
@@ -40,6 +33,7 @@ type ClientInfo struct {
 	DetailedList  string
 	CurrentAdd    string
 	CompanyAdd    string
+	AssetInfo     AssetInfo
 }
 
 //资产信息
@@ -141,10 +135,45 @@ type BusinessLoan struct {
 	DetailedList string
 }
 
-func GetInfo() string {
-	fmt.Println(time.Now().Weekday())
-	return time.Now().String()
+func GetWeekInfo() (map[int]int, map[int]int) {
+	var now = time.Now().Weekday().String()
+	var numW time.Duration
+	switch now {
+	case "Monday":
+		numW = 0
+	case "Tuesday":
+		numW = 1
+	case "Wednesday":
+		numW = 2
+	case "Thursday":
+		numW = 3
+	case "Friday":
+		numW = 4
+	case "Saturday":
+		numW = 5
+	case "Sunday":
+		numW = 6
+	}
+	info := map[int]int{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
+	infoFin := map[int]int{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
+	var clients [6][]*Client
+	d, _ := time.ParseDuration("-24h")
+	for i := int(numW); i > 0; i-- {
+		db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d*time.Duration(i)), time.Now().Add(d*time.Duration((i-1)))).Find(&clients[i])
+		info[i] = len(clients[i])
+	}
+	for i := int(numW); i > 0; i-- {
+		db.DB.Where("created_at BETWEEN ? AND ? AND state=?", time.Now().Add(d*time.Duration(i)), time.Now().Add(d*time.Duration((i-1))), "签约").Find(&clients[i])
+		infoFin[i] = len(clients[i])
+	}
+	return info, infoFin
 }
-func GetClienT() {
 
+func GetDayInfo() (map[string]int, map[string]int) {
+	var clients []*User
+	var clientsFin []*User
+	d, _ := time.ParseDuration("-24h")
+	db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d), time.Now()).Find(&clients)
+	db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d), time.Now()).Find(&clientsFin)
+	return nil, nil
 }
