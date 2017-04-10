@@ -88,7 +88,6 @@ type MortgageCar struct {
 	PayMethod   string
 	LimitTime   string
 	MouthPay    string
-	PayCount    string
 }
 
 //保单
@@ -129,7 +128,7 @@ type Salary struct {
 type BusinessLoan struct {
 	AssetInfoID  uint
 	Licence      bool
-	RegistTime   time.Time
+	RegistTime   string
 	Occupancy    string
 	FamKnow      bool
 	DetailedList string
@@ -154,26 +153,57 @@ func GetWeekInfo() (map[int]int, map[int]int) {
 	case "Sunday":
 		numW = 6
 	}
+
 	info := map[int]int{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
 	infoFin := map[int]int{0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
-	var clients [6][]*Client
-	d, _ := time.ParseDuration("-24h")
-	for i := int(numW); i > 0; i-- {
-		db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d*time.Duration(i)), time.Now().Add(d*time.Duration((i-1)))).Find(&clients[i])
-		info[i] = len(clients[i])
+
+	var clients []*Client
+	var clientsFin []*Client
+	d, _ := time.ParseDuration("-8h")
+	timeStr := time.Now().Format("2006-01-02")
+	t, _ := time.Parse("2006-01-02", timeStr)
+	for i := 0; i < int(numW)+1; i++ {
+		db.DB.Where("created_at BETWEEN ? AND ?", t.Add(3*d*time.Duration(i+1)), t.Add(3*d*time.Duration(i))).Find(&clients)
+		info[i] = len(clients)
 	}
-	for i := int(numW); i > 0; i-- {
-		db.DB.Where("created_at BETWEEN ? AND ? AND state=?", time.Now().Add(d*time.Duration(i)), time.Now().Add(d*time.Duration((i-1))), "签约").Find(&clients[i])
-		infoFin[i] = len(clients[i])
+	for i := 0; i < int(numW)+1; i++ {
+		db.DB.Where("created_at BETWEEN ? AND ? AND state = ?", t.Add(3*d*time.Duration(i+1)), t.Add(3*d*time.Duration(i)), "签约").Find(&clientsFin)
+		infoFin[i] = len(clientsFin)
 	}
 	return info, infoFin
 }
 
 func GetDayInfo() (map[string]int, map[string]int) {
-	var clients []*User
-	var clientsFin []*User
 	d, _ := time.ParseDuration("-24h")
-	db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d), time.Now()).Find(&clients)
-	db.DB.Where("created_at BETWEEN ? AND ?", time.Now().Add(d), time.Now()).Find(&clientsFin)
-	return nil, nil
+	//查找用户
+	var users []*User
+	db.DB.Not("role = ?", "超级管理员").Find(&users)
+	clientAccount := make(map[string]int)
+	clientFinAccount := make(map[string]int)
+	for i := 0; i < len(users); i++ {
+		clientAccount[users[i].Name] = 0
+		clientFinAccount[users[i].Name] = 0
+	}
+	//查找客户
+	var clients []*Client
+	var clientsFin []*Client
+
+	db.DB.Where("created_at > ?", time.Now().Add(d)).Find(&clients)
+	db.DB.Where("updated_at > ? AND state = ?", time.Now().Add(d), "签约").Or("created_at > ? AND state = ?", time.Now().Add(d), "签约").Find(&clientsFin)
+	for i := 0; i < len(clients); i++ {
+		for k, _ := range clientAccount {
+			if k == clients[i].Operator {
+				clientAccount[k] += 1
+			}
+		}
+	}
+	for i := 0; i < len(clientsFin); i++ {
+		for k, _ := range clientFinAccount {
+			if k == clientsFin[i].Operator {
+				clientFinAccount[k] += 1
+			}
+		}
+	}
+
+	return clientAccount, clientFinAccount
 }

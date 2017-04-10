@@ -16,13 +16,9 @@ func (c *MainController) Get() {
 	c.TplName = "index.tpl"
 }
 func (c *MainController) GetInfo() {
+
 	weekInfo, weekInfoFin := models.GetWeekInfo()
 	dayInfo, dayInfoFin := models.GetDayInfo()
-
-	/*weekInfo2Json, _ := json.Marshal(weekInfo)
-	weekInfoFin2Json, _ := json.Marshal(weekInfoFin)
-	dayInfo2Json, _ := json.Marshal(dayInfo)
-	dayInfoFin2Json, _ := json.Marshal(dayInfoFin)*/
 
 	info := map[string]interface{}{
 		"weekInfo":    weekInfo,

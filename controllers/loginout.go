@@ -30,10 +30,10 @@ func (c *LoginController) Post() {
 			c.Redirect("/admin", 301)
 			return
 		} else {
-			c.Redirect("/login", 301)
+			c.Redirect("/", 301)
 		}
 	} else {
-		c.Redirect("/login", 301)
+		c.Redirect("/", 301)
 	}
 
 }
@@ -45,6 +45,8 @@ type LogoutController struct {
 }
 
 func (c *LogoutController) Get() {
+	beego.Error("sahodhawoua\n")
 	c.Ctx.SetCookie("id", "", -1, "/")
+	c.Ctx.SetCookie("see", "", -1, "/")
 	c.Redirect("/login", 301)
 }

@@ -102,7 +102,7 @@ func init() {
 	client.Meta(&admin.Meta{
 		Name:       "Level",
 		Config:     &admin.SelectOneConfig{Collection: []string{"优秀", "良好", "中等", "较差"}},
-		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.CRUD, "店长").Allow(roles.Read, "店员"),
+		Permission: roles.Allow(roles.CRUD, "超级管理员").Allow(roles.CRUD, "店长").Allow(roles.CRUD, "店员"),
 	})
 	client.Meta(&admin.Meta{
 		Name:       "Result",
@@ -119,10 +119,17 @@ func init() {
 	},
 		Default: true,
 	})
-	//clientinfo := client.Meta(&admin.Meta{Name: "ClientInfo"}).Resource
 	client.Meta(&admin.Meta{
 		Name:   "Gender",
 		Config: &admin.SelectOneConfig{Collection: []string{"男", "女", "未知"}},
+	})
+	client.Meta(&admin.Meta{
+		Name: "Operator",
+		Setter: (func(resource interface{}, metaValue *resource.MetaValue, context *qor.Context) {
+			operator := context.CurrentUser.DisplayName()
+			u := resource.(*models.Client)
+			u.Operator = operator
+		}),
 	})
 	client.NewAttrs(
 		&admin.Section{
@@ -146,10 +153,10 @@ func init() {
 			},
 		},
 	)
-	client.EditAttrs(client.NewAttrs())
-	client.ShowAttrs(client.NewAttrs())
+	client.EditAttrs(client.NewAttrs(), "-Operator")
+	client.ShowAttrs("Operator", client.NewAttrs())
 
-	client.IndexAttrs("ID", "Name", "Count", "Level", "State", "Result")
+	client.IndexAttrs("ID", "Name", "Count", "Level", "State", "Result", "CreatedAt")
 
 	client.Action(&admin.Action{
 		Name: "批量删除",

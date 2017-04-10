@@ -33,7 +33,7 @@
          </button>
          <ul class="dropdown-menu">
            <li><a href="#" title="">双流店</a></li>
-           <li><a href="#" title="">青白江店</a></li>
+           <li><a href="#" title="">总店</a></li>
          </ul>
     </div>
   </div>
