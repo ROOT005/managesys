@@ -1,6 +1,7 @@
 package models
 
 import (
+	//"fmt"
 	"github.com/jinzhu/gorm"
 	"managesys/db"
 	"time"
@@ -163,18 +164,18 @@ func GetWeekInfo() (map[int]int, map[int]int) {
 	timeStr := time.Now().Format("2006-01-02")
 	t, _ := time.Parse("2006-01-02", timeStr)
 	for i := 0; i < int(numW)+1; i++ {
-		db.DB.Where("created_at BETWEEN ? AND ?", t.Add(3*d*time.Duration(i+1)), t.Add(3*d*time.Duration(i))).Find(&clients)
-		info[i] = len(clients)
+		db.DB.Where("created_at BETWEEN ? AND ?", t.Add(3*d*time.Duration(i)), t.Add(3*d*time.Duration(i-1))).Find(&clients)
+		info[int(numW)-i] = len(clients)
 	}
 	for i := 0; i < int(numW)+1; i++ {
-		db.DB.Where("created_at BETWEEN ? AND ? AND state = ?", t.Add(3*d*time.Duration(i+1)), t.Add(3*d*time.Duration(i)), "签约").Find(&clientsFin)
-		infoFin[i] = len(clientsFin)
+		db.DB.Where("created_at BETWEEN ? AND ? AND state = ?", t.Add(3*d*time.Duration(i)), t.Add(3*d*time.Duration(i-1)), "签约").Find(&clientsFin)
+		infoFin[int(numW)-i] = len(clientsFin)
 	}
+
 	return info, infoFin
 }
 
 func GetDayInfo() (map[string]int, map[string]int) {
-	d, _ := time.ParseDuration("-24h")
 	//查找用户
 	var users []*User
 	db.DB.Not("role = ?", "超级管理员").Find(&users)
@@ -187,9 +188,10 @@ func GetDayInfo() (map[string]int, map[string]int) {
 	//查找客户
 	var clients []*Client
 	var clientsFin []*Client
-
-	db.DB.Where("created_at > ?", time.Now().Add(d)).Find(&clients)
-	db.DB.Where("updated_at > ? AND state = ?", time.Now().Add(d), "签约").Or("created_at > ? AND state = ?", time.Now().Add(d), "签约").Find(&clientsFin)
+	timeStr := time.Now().Format("2006-01-02")
+	t, _ := time.Parse("2006-01-02", timeStr)
+	db.DB.Where("created_at > ?", t).Find(&clients)
+	db.DB.Where("updated_at > ? AND state = ?", t, "签约").Or("created_at > ? AND state = ?", t, "签约").Find(&clientsFin)
 	for i := 0; i < len(clients); i++ {
 		for k, _ := range clientAccount {
 			if k == clients[i].Operator {
@@ -204,6 +206,5 @@ func GetDayInfo() (map[string]int, map[string]int) {
 			}
 		}
 	}
-
 	return clientAccount, clientFinAccount
 }

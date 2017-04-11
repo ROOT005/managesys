@@ -48,7 +48,7 @@
       </div>
   </header>
   <footer style="text-align: center;">
-    <h2 style="color: #fff">{{date .Time "Y年m月d日  H时:i分"}}</h2>
+    <h2 style="color: #fff">{{date .Time "Y-m-d  H:i"}}</h2>
   </footer>
   <div class="backdrop"></div>
 </body>

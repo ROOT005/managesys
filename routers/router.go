@@ -156,7 +156,7 @@ func init() {
 	client.EditAttrs(client.NewAttrs(), "-Operator")
 	client.ShowAttrs("Operator", client.NewAttrs())
 
-	client.IndexAttrs("ID", "Name", "Count", "Level", "State", "Result", "CreatedAt")
+	client.IndexAttrs("ID", "Name", "Operator", "Count", "Level", "State", "Result", "CreatedAt")
 
 	client.Action(&admin.Action{
 		Name: "批量删除",
